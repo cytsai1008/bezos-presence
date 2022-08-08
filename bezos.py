@@ -18,12 +18,12 @@ settings = {
     "bezos_mode": False,
     "remove_explicit": True,
     "remove_clean": True,
-    "remove_feat": True,
+    "remove_feat": False,
     "check_interval": 5,
-    "no_parentheses": True,
+    "no_parentheses": False,
     "validApps": ["amazon"],
     "listening_to": "",
-    "artist_first": False,
+    "artist_first": True,
     "photo_override": "",
     "apps": {
         "amazon": ["amazon", "Amazon Music", ["Amazon Music.exe"]],
@@ -102,7 +102,7 @@ def connect(thisLoop):
             if settings["bezos_mode"]:
                 RPC = Presence(client_id="919485848028872715", loop=thisLoop)
             else:
-                RPC = Presence(client_id="917341970790244362", loop=thisLoop)
+                RPC = Presence(client_id="1006163221985636432", loop=thisLoop)
             RPC.connect()
             return RPC
         except Exception as e:
