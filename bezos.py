@@ -23,7 +23,7 @@ settings = {
     "no_parentheses": False,
     "validApps": ["amazon"],
     "listening_to": "",
-    "artist_first": True,
+    "artist_first": False,
     "photo_override": "",
     "apps": {
         "amazon": ["amazon", "Amazon Music", ["Amazon Music.exe"]],
