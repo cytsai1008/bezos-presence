@@ -194,7 +194,8 @@ def main():
 
     # ctrl+c handler
     def signal_handler(sig, frame):
-        os.kill(os.getpid(), signal.SIGINT)
+        import sys
+        sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
     if isDev:
