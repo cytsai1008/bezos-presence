@@ -94,6 +94,7 @@ def get_notifications(
         }
     if not title and not artist and not album_title:
         # get latest notification from notification.json
+        print("Missing title, artist, album_title")
         title = noti[sorted(list(noti.keys()))[-1]]["song_name"]
         artist = noti[sorted(list(noti.keys()))[-1]]["artist_name"]
         album_title = noti[sorted(list(noti.keys()))[-1]]["album_name"]
@@ -106,6 +107,7 @@ def get_notifications(
     elif not title and artist or album_title:
         # get the latest notification fit artist or album_title from notification.json
         # !!experimental method!!
+        print("Missing title")
         for i in sorted(list(noti.keys())):
             if noti[i]["artist_name"] == artist or noti[i]["album_name"] == album_title:
                 title = noti[i]["song_name"]
@@ -124,6 +126,7 @@ def get_notifications(
 
     else:  # only title
         # find notification data with same title
+        print("Missing artist, album_title")
         for key in noti:
             if noti[key]["title"] == title:
                 artist = noti[key]["artist_name"]

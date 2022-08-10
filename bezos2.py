@@ -119,11 +119,16 @@ def connect(thisLoop):
 
 
 def checkMusic(loop):  # sourcery skip: low-code-quality
-    provider = "control"
     run_rp: bool = False
     RPC = connect(loop)
     while True:
         media = asyncio.run(get_media_info(settings["validApps"]))
+        media2 = get_notifications(
+            media["title"], media["artist"], media["album_title"]
+        )
+        media2["app_name"] = media["app_name"]
+        media2["is_pause"] = media["is_pause"]
+
         if media is None:
             media = dict(default)
         appName = media["app_name"]
@@ -131,37 +136,12 @@ def checkMusic(loop):  # sourcery skip: low-code-quality
 
         # TODO: Read current RPC data provider and only run if current provider state has changed
 
-        media2 = get_notifications(
-            media["title"], media["artist"], media["album_title"]
-        )
-        media2["app_name"] = appName
-        media2["is_pause"] = media["is_pause"]
 
         # TODO: :thinking:
 
         # get if any of media value is ""
-        if any(media[k] == "" for k in media):
-            media_miss = True
-        else:
-            media_miss = False
-
-        if (
-            (media != track and media2 != track)
-            or (
-                not media_miss
-                and (media["title"] != track["title"])
-                and provider == "control"
-            )
-            or (
-                media_miss
-                and media2["title"] != track["title"]
-                and provider == "notification"
-            )
-        ):
-            if provider == "control":
-                track.update(media)
-            else:
-                track.update(media2)
+        if media2 != track:
+            track.update(media2)
             data = [track["title"], track["artist"], track["album_title"]]
             if data[0] == "" and data[1] == "" and data[2] == "":
                 if media["is_pause"]:
@@ -185,11 +165,9 @@ def checkMusic(loop):  # sourcery skip: low-code-quality
 
                     else:
                         run_rp = True
-                        provider = "notification"
                         print("Using Media Provider By Notification")
 
             else:
-                provider = "control"
                 run_rp = True
 
             if run_rp:
