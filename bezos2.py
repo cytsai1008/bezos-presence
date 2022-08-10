@@ -123,9 +123,8 @@ def checkMusic(loop):  # sourcery skip: low-code-quality
     RPC = connect(loop)
     while True:
         media = asyncio.run(get_media_info(settings["validApps"]))
-        media2 = get_notifications(
-            media["title"], media["artist"], media["album_title"]
-        )
+        media2 = get_notifications()
+
         media2["app_name"] = media["app_name"]
         media2["is_pause"] = media["is_pause"]
 
@@ -135,7 +134,6 @@ def checkMusic(loop):  # sourcery skip: low-code-quality
         media = {k: v for k, v in media.items() if k in track}
 
         # TODO: Read current RPC data provider and only run if current provider state has changed
-
 
         # TODO: :thinking:
 
