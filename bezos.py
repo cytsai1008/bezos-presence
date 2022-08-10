@@ -12,6 +12,8 @@ from winsdk.windows.media.control import (
     GlobalSystemMediaTransportControlsSessionManager as MediaManager,
 )  # winrt to winsdk for python 3.10 support
 
+from notification import get_notifications
+
 # https://stackoverflow.com/questions/65011660/how-can-i-get-the-title-of-the-currently-playing-media-in-windows-10-with-python
 
 settings = {
@@ -44,6 +46,7 @@ default = {
     "artist": "",
     "title": "",
     "app_name": "",
+    "is_pause": False,
 }
 track = dict(default)
 
@@ -67,6 +70,9 @@ async def get_media_info(validApps):
             if valid:
                 try:
                     info = await current_session.try_get_media_properties_async()
+                    is_pause = (
+                        not current_session.get_playback_info().controls.is_pause_enabled
+                    )
                 except:
                     # opening the app without music playing sometimes
                     # fills the box with null data, causing a crash
@@ -82,6 +88,7 @@ async def get_media_info(validApps):
                 # converts winrt vector to list
                 info_dict["genres"] = list(info_dict["genres"])
                 info_dict["app_name"] = appName
+                info_dict["is_pause"] = is_pause
                 return info_dict
 
     return None
@@ -111,24 +118,49 @@ def connect(thisLoop):
             time.sleep(4)
 
 
-def checkMusic(loop):
+def checkMusic(loop):  # sourcery skip: low-code-quality
     RPC = connect(loop)
     while True:
+        run_rp: bool = False
         media = asyncio.run(get_media_info(settings["validApps"]))
         if media is None:
             media = dict(default)
         appName = media["app_name"]
         media = {k: v for k, v in media.items() if k in track}
+
+        # TODO: Read current RPC data provider and only run if current provider state has changed
+
         if media != track:
             track.update(media)
             data = [track["title"], track["artist"], track["album_title"]]
             if data[0] == "" and data[1] == "" and data[2] == "":
-                try:
-                    RPC.clear()
-                    print("Cleared")
-                except:
-                    RPC = connect(loop)
+                if media["is_pause"]:
+                    run_rp = False
+                    try:
+                        RPC.clear()
+                        print("Cleared")
+                    except Exception:
+                        RPC = connect(loop)
+                else:
+                    media = get_notifications()
+                    media["app_name"] = appName
+                    media["is_pause"] = False
+                    track.update(media)
+                    data = [track["title"], track["artist"], track["album_title"]]
+                    if data[0] == "" and data[1] == "" and data[2] == "":
+                        run_rp = False
+                        continue
+
+                    # TODO: Fix missing data by providing known data (ex: title)
+
+                    else:
+                        run_rp = True
+                        print("Using Media Provider By Notification")
+
             else:
+                run_rp = True
+
+            if run_rp:
                 if settings["artist_first"]:
                     data = [track["artist"], track["title"], track["album_title"]]
                 if data[0] == data[1]:
@@ -147,13 +179,13 @@ def checkMusic(loop):
                         data[i] = val.replace("[Clean]", "").strip()
                 if settings["remove_feat"]:
                     for i, val in enumerate(data):
-                        data[i] = re.sub("\[[^()]*\]", "", val).strip()
+                        data[i] = re.sub("\[[^()]*]", "", val).strip()
                         if data[i].find("feat.") != -1:
-                            data[i] = data[i][:data[i].find("feat.")].strip()
+                            data[i] = data[i][: data[i].find("feat.")].strip()
                         if data[i].find("ft.") != -1:
-                            data[i] = data[i][:data[i].find("ft.")].strip()
+                            data[i] = data[i][: data[i].find("ft.")].strip()
                         if data[i].find("FT.") != -1:
-                            data[i] = data[i][:data[i].find("FT.")].strip()
+                            data[i] = data[i][: data[i].find("FT.")].strip()
                 header = settings["listening_to"] + data[0]
                 details = data[1]
                 if data[2] != "":
@@ -170,9 +202,18 @@ def checkMusic(loop):
                     photoData = settings["apps"][appName]
                 try:
                     if details == "":
-                        RPC.update(state=header, large_image=photoData[0], large_text=photoData[1])
+                        RPC.update(
+                            state=header,
+                            large_image=photoData[0],
+                            large_text=photoData[1],
+                        )
                     else:
-                        RPC.update(state=details, details=header, large_image=photoData[0], large_text=photoData[1])
+                        RPC.update(
+                            state=details,
+                            details=header,
+                            large_image=photoData[0],
+                            large_text=photoData[1],
+                        )
 
                     print(data)
                 except:
@@ -195,6 +236,7 @@ def main():
     # ctrl+c handler
     def signal_handler(sig, frame):
         import sys
+
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -204,5 +246,4 @@ def main():
 
 
 if __name__ == "__main__":
-    print("Starting...")
     main()
