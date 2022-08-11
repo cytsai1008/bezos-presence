@@ -5,8 +5,10 @@ import re
 import signal
 import sys
 import threading
+import _thread
 import time
 
+import pystray
 from pypresence import Presence
 from winsdk.windows.media.control import (
     GlobalSystemMediaTransportControlsSessionManager as MediaManager,
@@ -224,12 +226,13 @@ def checkMusic(loop):  # sourcery skip: low-code-quality
                         )
 
                     print(data)
-                except:
+                except Exception:
                     RPC = connect(loop)
         time.sleep(settings["check_interval"])
 
 
 def main():
+    print("Starting Main Function...")
     isDev = False
     for i, arg in enumerate(sys.argv):
         if arg == "--dev":
@@ -243,9 +246,7 @@ def main():
 
     # ctrl+c handler
     def signal_handler(sig, frame):
-        import sys
-
-        sys.exit(0)
+        _thread.interrupt_main()
 
     signal.signal(signal.SIGINT, signal_handler)
     if isDev:
@@ -253,5 +254,23 @@ def main():
             time.sleep(0.1)
 
 
+def file_path_resolver():
+    return f"{sys._MEIPASS}/image/" if getattr(sys, "frozen", False) else "./assets/"
+
+
+def load_image(name):
+    from PIL import Image
+
+    return Image.open(name)
+
+
 if __name__ == "__main__":
-    main()
+    icon_obj = load_image(f"{file_path_resolver()}app_icon.png")
+    menu = pystray.Menu(pystray.MenuItem("Exit (Not Working)", lambda: sys.exit(0)))
+    icon = pystray.Icon(
+        "Amazon Music Discord RP",
+        icon=icon_obj,
+        menu=menu,
+    )
+
+    icon.run(setup=main())
