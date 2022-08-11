@@ -5,7 +5,6 @@ import re
 import signal
 import sys
 import threading
-import _thread
 import time
 
 import pystray
@@ -51,6 +50,8 @@ default = {
     "is_pause": False,
 }
 track = dict(default)
+
+pid = os.getpid()
 
 
 async def get_media_info(validApps):
@@ -245,10 +246,6 @@ def main():
     p.start()
 
     # ctrl+c handler
-    def signal_handler(sig, frame):
-        _thread.interrupt_main()
-
-    signal.signal(signal.SIGINT, signal_handler)
     if isDev:
         while True:
             time.sleep(0.1)
@@ -266,11 +263,17 @@ def load_image(name):
 
 if __name__ == "__main__":
     icon_obj = load_image(f"{file_path_resolver()}app_icon.png")
-    menu = pystray.Menu(pystray.MenuItem("Exit (Not Working)", lambda: sys.exit(0)))
+    menu = pystray.Menu(pystray.MenuItem("Exit", lambda: os.kill(pid, signal.SIGTERM)))
     icon = pystray.Icon(
         "Amazon Music Discord RP",
         icon=icon_obj,
         menu=menu,
     )
+
+    def signal_handler(sig=None, frame=None):
+        # kill from pid
+        os.kill(pid, signal.SIGTERM)
+
+    signal.signal(signal.SIGINT, signal_handler)
 
     icon.run(setup=main())
